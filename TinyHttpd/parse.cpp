@@ -63,6 +63,46 @@ bool parse_http_request(const string& http_request, http_header_t* httphdr){
 	if((next = http_request.find(crlf, prev)) != string::nops){
 		string first_line(http_request.substr(prev, next - prev));
 		prev = next;
+		stringstream sstream(first_line);
+		sstream >> (httphdr->method);
+		sstream >> (httphdr->url);
+		sstream >> (httphdr->version);
+	} else {
+		perror("parse_http_request: http_request has not a \\r\\n");
+		return false;
+	}
+	
+	//查找"\r\n\r\n"的位置
+	size_t pos_crlfcrlf = http_request.find(crlfcrlf, prev);
+	if(pos_crlfcrlf == string::npos){
+		perror("parse_http_request: http_request has not a \"\r\n\r\n\"");
+		return false;
+	}
+	
+	//解析首部行
+	string buf, key, value;
+	size_t begin = prev + 2, end = next;
+	size_t i = 0, j = 0;
+	while(1){
+		end = http_request.find(crlf, begin);
+		
+		//直到遇到"\r\n\r\n"
+		if(end <= pos_crlfcrlf){
+			buf = http_request.substr(begin, end - begin); //保存一行
+			
+			for(; isblank(buf[i]); ++i);
+			for(j = i; buf[j] != ':' && !isblank(buf[j]); ++j);
+			key = buf.substr(i, j - i);
+			
+			for(i = j; !isalpha(buf[i]) && !isdigit(buf[i]); ++i);
+			for(j = i; j != end; ++j);
+			value = buf.substr(i, j - i);
+			
+			httphdr-header.insert(make_header(key, value));
+			begin = end;
+		} else {
+			break;
+		}
 	}
 }
 
