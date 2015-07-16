@@ -4,6 +4,16 @@
 #define ONE_MB	    1024*ONE_KB
 #define ONE_GB		1024*ONE_MB
 
+int32_t thread_num = 0;
+pthread_mutex_t thread_num_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void* thread_func(void* args);                            //处理客户端连接的线程函数
+void thread_add();                                        //线程数加1
+void thread_reduce();                                     //线程数减1
+int do_http_header(http_header_t *httphdr, string& reply);//根据解析的http_header_t信息，处理客户请求
+char *get_state_by_codes(int http_codes);                 //根据http状态码返回状态
+
+//-----------------------------------------主函数-----------------------------------------
 int main(){
 	int                     listenfd;
 	int                     sockfd;
@@ -157,8 +167,8 @@ void* thread_func(void* args){
 		if(http_codes == BADREQUEST || 
 		   http_codes == NOIMPLEMENTED || 
 		   http_codes == NOTFOUND || 
-		   (http_codes == TYHP_OK && httphdr->method == "HEAD") || 
-		   (http_codes == TYHP_OK && httphdr->method == "GET")
+		   (http_codes == OK && httphdr->method == "HEAD") || 
+		   (http_codes == OK && httphdr->method == "GET")
 		   )
 		{
 			while(1){
@@ -184,6 +194,7 @@ void* thread_func(void* args){
 				printf("send file: %s", real_url.c_str());
 				nwrite = 0;
 				while(sendfile(sockfd, in_fd, (off_t*)&nwrite, file_size) > 0);
+				printf("send file success\n");
 			}
 		}
 		free(reply_buf);
@@ -196,18 +207,85 @@ void* thread_func(void* args){
 
 //线程数加1
 void thread_add(){
-	
+	pthread_mutex_lock(&thread_num_mutex);
+	++thread_num;
+	pthread_mutex_unlock(&thread_num_mutex);
 }
 
 //线程数减1
 void thread_reduce(){
-	
+	pthread_mutex_lock(&thread_num_mutex);
+	--thread_num;
+	pthread_mutex_unlock(&thread_num_mutex);
 }
 
-//根据解析得到的http_header_t处理客户请求，out中存放响应包
+//根据解析得到的http_header_t处理客户请求，reply中存放响应包
 int do_http_header(http_header_t *httphdr, string& reply){
+	char status_line[256] = {0};
+	string crlf("\r\n");
+	string server("Server: tinyhttpd\r\n");
+	string Public("Public: GET, HEAD\r\n");
+	string content_base = "Content-Base: " + domain + crlf;
+	string date = "Date: " + time_gmt() + crlf;
+	string content_length("Content-Length: ");
+	string content_location("Content-Location: ");
+	string last_modified("Last-Modified: ");
 	
+	if(httphdr == NULL){
+		snpritf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\\r\n",
+		        BADREQUEST, get_state_by_codes(BADREQUEST));
+		reply = status_line + crlf;
+		return BADREQUEST;
+	}
+	
+	string method = httphdr->method;
+	string real_url = make_real_url(httphdr->url);
+	string version = httphdr->version;
+	if(method == "GET" || method == "HEAD"){
+		if(is_file_existed(real_url.c_str() == -1)){
+			snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\r\n",
+			         NOTFOUND, get_state_by_codes(NOTFOUND));
+			reply += (status_line + server + date + crlf);
+			return NOTFOUND;
+		} else {
+			int len = get_file_length(real_url.c_str());
+			snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\r\n",
+			         OK, get_state_by_codes(OK));
+			reply += status_line;
+			snprintf(status_line, sizeof(status_line), "%d\r\n", len);
+			reply += content_length + status_line;
+			reply += server + content_base + date;
+			reply += last_modified + get_file_modified_time(real_url.c_str());
+		}
+	} else if(method == "PUT" || method == "DELETE" || method == "POST"){
+		snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\r\n",
+		         NOIMPLEMENTED, get_state_by_codes(NOIMPLEMENTED));
+		reply += status_line + server + Public + date + crlf;
+		return NOIMPLEMENTED;
+	} else {
+		snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\r\n",
+				 BADREQUEST, get_state_by_codes(BADREQUEST));
+		reply = status_line + crlf;
+		return BADREQUEST;
+	}
+	return OK;
 }
 
-
-
+//通过http状态码获得状态
+char *get_state_by_codes(int http_codes){
+	switch(http_codes){
+		case OK:
+			return ok;
+		case BADREQUEST:
+			return badrequest;
+		case FORBIDDEN:
+			return forbidden;
+		case NOTFOUND:
+			return notfound;
+		case NOIMPLEMENTED:
+			return noimplemented;
+		default:
+			break;
+	}
+	return NULL;
+}
