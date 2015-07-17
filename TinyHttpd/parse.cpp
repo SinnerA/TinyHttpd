@@ -104,16 +104,18 @@ bool parse_http_request(const string& http_request, http_header_t* httphdr){
 			break;
 		}
 	}
+	
+	//获取http请求包的实体值
+	httphdr->body = http_request.substr(pos_crlfcrlf + 4, http_request.size() - pos_crlfcrlf - 4);
+	return true;
 }
 
-
-
-
-
-
-
-
-
-
-
-
+//根据key，得到value
+string get_value_from_http_header(const string& key, const header_map& header){
+	if(header.empty())
+		return "";
+	header_map::const_iterator cit = header.find(key);
+	if(cit == header.end())
+		return "";
+	return (*cit).second;
+}
