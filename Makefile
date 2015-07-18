@@ -1,9 +1,9 @@
-objects = parse.o utility.o tinyhttpd.o -lpthread
+objects = ./TinyHttpd/parse.o ./TinyHttpd/utility.o ./TinyHttpd/tinyhttpd.o -lpthread
 
 main : $(objects)
-g++ -o main $(objects)
-parse.o : parse.cpp parse.h
-utility.o : utility.cpp utility.h
-tinyhttpd.o : tinyhttpd.cpp tinyhttpd.h
+	g++ -o main $(objects)
+parse.o : ./TinyHttpd/parse.cpp ./TinyHttpd/parse.h
+utility.o : ./TinyHttpd/utility.cpp ./TinyHttpd/utility.h
+tinyhttpd.o : ./TinyHttpd/tinyhttpd.cpp ./TinyHttpd/tinyhttpd.h
 clean :
-rm edit $(objects)
+	rm main ./TinyHttpd/parse.o ./TinyHttpd/utility.o ./TinyHttpd/tinyhttpd.o
