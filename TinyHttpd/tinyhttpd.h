@@ -24,6 +24,9 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 
+#include "utility.h"
+#include "parse.h"
+
 using namespace std;
 
 typedef struct _epollfd_connfd{

@@ -14,7 +14,7 @@ int do_http_header(http_header_t *httphdr, string& reply);//根据解析的http_heade
 char *get_state_by_codes(int http_codes);                 //根据http状态码返回状态
 
 //-----------------------------------------主函数-----------------------------------------
-int main(){
+int main(int argc, char** argv){
 	int                     listenfd;
 	int                     sockfd;
 	int                     nfds;
@@ -36,7 +36,7 @@ int main(){
 	}
 	
 	//配置文件是否存在
-	if(is_file_existed(argv[1])){
+	if(!is_file_existed(argv[1])){
 		perror("file is not existed\n");
 		return 1;
 	}
@@ -47,7 +47,7 @@ int main(){
 		return 1;
 	}
 	
-	pservent = getservbyname("http", "tcp");
+	pservent = Getservbyname("http", "tcp");
 	listen_port = pservent->s_port;
 	
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);
