@@ -288,12 +288,12 @@ void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen){
 }
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen){
-	int sockfd = 0;
+	int ret = 0;
 	while(1){	
-		sockfd = accept(sockfd, addr, addrlen);
-		if(sockfd > 0){
+		ret = accept(sockfd, addr, addrlen);
+		if(ret > 0){
 			break;
-		} else if(sockfd == -1) {
+		} else if(ret == -1) {
 			//由于我们把监听套接字设置为了非阻塞模式
 			if(errno != EAGAIN && errno != EPROTO && errno != EINTR && errno != ECONNABORTED){
 				perror("accept");
@@ -303,7 +303,7 @@ int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen){
 			continue;
 		}
 	}
-	return sockfd;
+	return ret;
 }
 struct servent* Getservbyname(const char *name, const char *proto){
 	struct servent *pservent;

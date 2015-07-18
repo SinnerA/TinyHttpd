@@ -59,7 +59,7 @@ void init_config_keyword_map();
 int parse_config(const char *path);
 
 //设置文件描述符为非阻塞模式
-void set_nonblocking(int fd);
+int set_nonblocking(int fd);
 
 //设置套接字SO_REUSEADDR选项
 void set_reuse_addr(int sockfd);

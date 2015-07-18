@@ -8,7 +8,7 @@ string get_value_from_http_header(const string& key, const header_map& header);
 //打印http_header_t里面的header
 void print_http_header_header(const header_map& header){
 	if(!header.empty()){
-		header::const_iterator it = header.begin();
+		map<string, string>::const_iterator it = header.begin();
 		while(it != header.end()){
 			cout << it->first << ": " << it->second << endl;
 			++it;
@@ -22,7 +22,7 @@ void print_http_header(http_header_t* httphdr){
 		printf("print http_header failed\n");
 		return;
 	}
-	cout << httphdr->method << " " << httphdr->url << httphdr->version << endl;
+	cout << httphdr->method << " " << httphdr->url << " " << httphdr->version << endl;
 	print_http_header_header(httphdr->header);
 	cout << endl;
 	cout << httphdr->body << endl;
@@ -30,10 +30,10 @@ void print_http_header(http_header_t* httphdr){
 
 //为http_header_t分配内存
 http_header_t *alloc_http_header(){
-	http_header_t httphdr = (http_header_t*)new http_header_t;
+	http_header_t *httphdr = (http_header_t*)new http_header_t();
 	if(httphdr == NULL){
 		printf("alloc http_header falied\n");
-		return 1;
+		exit(-1);
 	}
 	return httphdr;
 }
@@ -60,7 +60,7 @@ bool parse_http_request(const string& http_request, http_header_t* httphdr){
 	size_t prev = 0, next = 0;
 	
 	//解析http请求包的起始行
-	if((next = http_request.find(crlf, prev)) != string::nops){
+	if((next = http_request.find(crlf, prev)) != string::npos){
 		string first_line(http_request.substr(prev, next - prev));
 		prev = next;
 		stringstream sstream(first_line);
@@ -98,8 +98,8 @@ bool parse_http_request(const string& http_request, http_header_t* httphdr){
 			for(j = i; j != end; ++j);
 			value = buf.substr(i, j - i);
 			
-			httphdr-header.insert(make_header(key, value));
-			begin = end;
+			httphdr->header.insert(make_header(key, value));
+			begin = end + 2;
 		} else {
 			break;
 		}

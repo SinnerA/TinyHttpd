@@ -14,12 +14,12 @@ int do_http_header(http_header_t *httphdr, string& reply);//根据解析的http_heade
 char *get_state_by_codes(int http_codes);                 //根据http状态码返回状态
 
 //-----------------------------------------主函数-----------------------------------------
-int main(int argc, char** argv){
+int main(int argc, char* argv[]){
 	int                     listenfd;
 	int                     sockfd;
 	int                     nfds;
 	int                     epollfd;
-	unit16_t                listen_port;
+	uint16_t                listen_port;
 	struct servent          *pservent;
 	struct epoll_event      event;
 	struct epoll_event      events[MAX_EVENTS];
@@ -30,7 +30,7 @@ int main(int argc, char** argv){
 	_epollfd_connfd         epollfd_connfd;
 	pthread_t               pid;
 	
-	if(argc <= 2){
+	if(argc < 2){
 		printf("usage: %s config_path\n", basename(argv[0]));
 		return 1;
 	}
@@ -61,7 +61,7 @@ int main(int argc, char** argv){
 	set_nonblocking(listenfd); //非阻塞模式
 	set_reuse_addr(listenfd);  //设置SO_REUSEADDR选项
 	
-	epollfd = Epollfd_create(MAX_EVENTS);
+	epollfd = Epoll_create(MAX_EVENTS);
 	
 	event.events = EPOLLIN;
 	event.data.fd = listenfd;
@@ -96,7 +96,7 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-	pthread_attr_destory(&pthread_attr_detach);
+	pthread_attr_destroy(&pthread_attr_detach);
 	close(listenfd);
 	return 0;
 }
@@ -126,11 +126,9 @@ void* thread_func(void* args){
 	
 	int32_t nread = 0, n = 0;
 	while(1){
-		if((n = read(sockfd, request_buf + nread, sizeof(request_buf) - 1)) > 0){
+		if((n = read(sockfd, request_buf + nread, ONE_MB - 1)) > 0){
 			nread += n;
-		} else if(n == 0){
-			break;
-		} else (n < 0){
+		} else if (n < 0){
 			if(errno == EINTR){
 				continue;
 			} else if(errno == EAGAIN || errno == EWOULDBLOCK){
@@ -140,6 +138,8 @@ void* thread_func(void* args){
 				Free(request_buf);
 				break;
 			}
+		} else {
+			break;
 		}
 	}
 	
@@ -154,14 +154,15 @@ void* thread_func(void* args){
 		print_http_header(httphdr);
 		
 		string http_reply;
-		int http_codes = do_http_header(httphdr, http_reply);
-		printf("http响应包：\n%s\n", http_reply);
+		int http_codes = do_http_header(httphdr, http_reply);	
+		printf("http响应包：\n%s\n", http_reply.c_str());
 		
 		char *reply_buf = (char*)Malloc(http_reply.size());
-		for(int i = 0; i < http_reply.size(); i++){
+		int i = 0;
+		for(; i < http_reply.size(); i++){
 			reply_buf[i] = http_reply[i];
 		}
-		reply_buf[http_reply.size()] = '\0';
+		reply_buf[i] = '\0';
 		
 		int nwrite = 0, n = 0;
 		if(http_codes == BADREQUEST || 
@@ -171,8 +172,8 @@ void* thread_func(void* args){
 		   (http_codes == OK && httphdr->method == "GET")
 		   )
 		{
-			while(1){
-				if((n = write(sockfd, reply_buf + nwrite, sizeof(reply_buf))) > 0){
+			while(nwrite < i){
+				if((n = write(sockfd, reply_buf + nwrite, i)) > 0){
 					nwrite += n;
 				} else if(n == 0){
 					break;
@@ -186,20 +187,20 @@ void* thread_func(void* args){
 					}
 				}
 			}
-			if(http_codes == TYHP_OK && httphdr->method == "GET"){
+			if(http_codes == OK && httphdr->method == "GET"){
 				string real_url = make_real_url(httphdr->url);
 				int in_fd = open(real_url.c_str(), O_RDONLY);
 				int file_size = get_file_length(real_url.c_str());
 				printf("GET the file size is %d\n", file_size);
-				printf("send file: %s", real_url.c_str());
+				printf("send file: %s\n", real_url.c_str());
 				nwrite = 0;
 				while(sendfile(sockfd, in_fd, (off_t*)&nwrite, file_size) > 0);
 				printf("send file success\n");
 			}
 		}
 		free(reply_buf);
+		free_http_header(httphdr);
 	}
-	free_http_header(httphdr);
 	close(sockfd);
 	thread_reduce();
 	printf("thread %u stop......\n", (unsigned int)pid);
@@ -232,7 +233,7 @@ int do_http_header(http_header_t *httphdr, string& reply){
 	string last_modified("Last-Modified: ");
 	
 	if(httphdr == NULL){
-		snpritf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\\r\n",
+		snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\\r\n",
 		        BADREQUEST, get_state_by_codes(BADREQUEST));
 		reply = status_line + crlf;
 		return BADREQUEST;
@@ -242,7 +243,7 @@ int do_http_header(http_header_t *httphdr, string& reply){
 	string real_url = make_real_url(httphdr->url);
 	string version = httphdr->version;
 	if(method == "GET" || method == "HEAD"){
-		if(is_file_existed(real_url.c_str() == -1)){
+		if(is_file_existed(real_url.c_str()) == -1){
 			snprintf(status_line, sizeof(status_line), "HTTP/1.1 %d %s\r\n",
 			         NOTFOUND, get_state_by_codes(NOTFOUND));
 			reply += (status_line + server + date + crlf);

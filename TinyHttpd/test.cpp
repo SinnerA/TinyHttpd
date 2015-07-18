@@ -17,11 +17,12 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include <assert.h>
 
 using namespace std;
 
 int main(int argc, char *argv[]){
-	if(argc <= 2){
+	if(argc < 2){
 		printf("usage: %s ip_address\n", basename(argv[0]));
 		return 1;
 	}
@@ -36,15 +37,15 @@ int main(int argc, char *argv[]){
 	inet_pton(AF_INET, ip, &server_address.sin_addr);
 	server_address.sin_port = htons(80);
 	
-	int sockfd = sock(PF_INET, SOCK_STREAM, 0);
+	int sockfd = socket(PF_INET, SOCK_STREAM, 0);
 	assert(sockfd >= 0);
 	
-	ret = connnect(sockfd, (struct sockaddr*)server_address, sizeof(server_address));
+	ret = connect(sockfd, (struct sockaddr*)&server_address, sizeof(server_address));
 	if(ret < 0) printf("connect to server failed\n");
 	
 	printf("发送:\n");
 	char writeBuf[] = "GET www.baidu.com/index/index.html HTTP/1.1\r\nAccept-Language: zh-cn\r\n\r\n";
-	write(sockfd, writeBuf, sizeof(buf));
+	write(sockfd, writeBuf, sizeof(writeBuf));
 	printf("发送结束\n");
 	
 	printf("开始读取\n");
