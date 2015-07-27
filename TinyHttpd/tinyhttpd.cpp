@@ -121,7 +121,6 @@ void* thread_func(void* args){
 	char *request_buf = (char*)Malloc(ONE_MB); //1MB缓存存放http请求包
 	bzero(request_buf, sizeof(request_buf));
 	
-	set_off_tcp_nagle(sockfd);         //关闭sockfd的Nagle算法
 	set_recv_timeo(sockfd, 60, 0);     //设置接受超时时间为60秒
 	
 	int32_t nread = 0, n = 0;

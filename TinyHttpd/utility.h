@@ -64,17 +64,6 @@ int set_nonblocking(int fd);
 //设置套接字SO_REUSEADDR选项
 void set_reuse_addr(int sockfd);
 
-//开启套接字TCP_NODELAY选项，关闭nagle算法
-void set_off_tcp_nagle(int sockfd);
-
-//关闭套接字TCP_NODELAY选项，开启nagle算法
-void set_on_tcp_nagle(int sockfd);
-
-//开启套接字TCP_CORK选项
-void set_on_tcp_cork(int sockfd);
-
-//关闭套接字TCP_CORK选项
-void set_off_tcp_cork(int sockfd);
 
 //设置套接字SO_RCVTIMEO选项，接收超时
 void set_recv_timeo(int sockfd, int sec, int usec);

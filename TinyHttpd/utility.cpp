@@ -203,46 +203,6 @@ void set_reuse_addr(int sockfd){
 	}
 }
 
-//开启套接字TCP_NODELAY选项，关闭nagle算法
-void set_off_tcp_nagle(int sockfd){
- 	int on = 1;
- 	int ret = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
- 	if(ret == -1){
- 		perror("setsockopt: TCP_NODELAY ON");
-		exit(-1);
- 	}
-}
-
-//关闭套接字TCP_NODELAY选项，开启nagle算法
-void set_on_tcp_nagle(int sockfd){
- 	int off = 0;
- 	int ret = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &off, sizeof(off));
- 	if(ret == -1){
- 		perror("setsockopt: TCP_NODELAY OFF");
-		exit(-1);
- 	}
-}
-
-//开启套接字TCP_CORK选项
-void set_on_tcp_cork(int sockfd){
- 	int on = 1;
- 	int ret = setsockopt(sockfd, SOL_TCP, TCP_CORK, &on, sizeof(on));
- 	if(ret == -1){
- 		perror("setsockopt: TCP_CORK ON");
-		exit(-1);
- 	}
-}
-
-//关闭套接字TCP_CORK选项
-void set_off_tcp_cork(int sockfd){
- 	int off = 0;
- 	int ret = setsockopt(sockfd, SOL_TCP, TCP_CORK, &off, sizeof(off));
- 	if(ret == -1){
- 		perror("setsockopt: TCP_CORK OFF");
-		exit(-1);
- 	}
-}
-
 //设置套接字SO_RCVTIMEO选项，接收超时
 void set_recv_timeo(int sockfd, int sec, int usec){
  	struct timeval time = {sec, usec};
