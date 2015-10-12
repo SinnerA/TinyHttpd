@@ -3,7 +3,7 @@
 
 1.服务器的架构为epoll + 多线程 + sendfile
 
-2.暂时只支持GET和HEAD方法，支持长连接
+2.暂时只支持GET和HEAD方法
 
 3.可配置的，domain就是网站域名，docroot是文件根目录
 
